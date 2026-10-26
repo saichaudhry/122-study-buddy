@@ -42,6 +42,7 @@ def ask_claude(system, user_text):
     client = llm()
     if client is None:
         return None
+    print("\nAsking Claude (this takes a few seconds)...", flush=True)
     resp = client.messages.create(
         model=MODEL, max_tokens=4096, system=system,
         messages=[{"role": "user", "content": user_text}],
@@ -172,6 +173,8 @@ def main():
             break
         if choice in actions:
             actions[choice]()
+            # Keep the result on screen until the user is done reading it.
+            input("\nPress Enter to return to the menu...")
 
 
 if __name__ == "__main__":
