@@ -38,14 +38,15 @@ def llm():
     return anthropic.Anthropic()
 
 
-def ask_claude(system, user_text):
+def ask_claude(system, user_text, history=None):
+    """Send one message, optionally continuing an earlier conversation (list of messages)."""
     client = llm()
     if client is None:
         return None
     print("\nAsking Claude (this takes a few seconds)...", flush=True)
+    messages = (history or []) + [{"role": "user", "content": user_text}]
     resp = client.messages.create(
-        model=MODEL, max_tokens=4096, system=system,
-        messages=[{"role": "user", "content": user_text}],
+        model=MODEL, max_tokens=4096, system=system, messages=messages,
     )
     # The response can start with thinking blocks; keep only the text the model wrote for the user.
     return "".join(block.text for block in resp.content if block.type == "text")
@@ -65,17 +66,47 @@ def search(question):
 
 
 def ask():
-    question = input("\nWhat are you stuck on? ").strip()
-    if not question:
+    topic = input("\nWhat are you stuck on? ").strip()
+    if not topic:
         return
-    hits = search(question)
-    if hits[0][0] > NO_MATCH_DISTANCE:
-        print(f"\nNothing in the notes looks related (closest distance {hits[0][0]:.2f}). "
-              "Try rephrasing, or add a note about it first.")
-        return
-    hits = [h for h in hits if h[0] <= NO_MATCH_DISTANCE]  # drop weak matches from the context
+    history = []  # the conversation with Claude so far, so follow-ups have context
+    question = topic
+    while True:
+        # Search on the original topic plus the follow-up, so short follow-ups like
+        # "can you show an example?" still pull material about the same topic.
+        query = question if question == topic else f"{topic} {question}"
+        hits = search(query)
+        if hits[0][0] > NO_MATCH_DISTANCE:
+            print(f"\nNothing in the notes looks related (closest distance {hits[0][0]:.2f}). "
+                  "Try rephrasing, or add a note about it first.")
+            if not history:
+                return
+        else:
+            hits = [h for h in hits if h[0] <= NO_MATCH_DISTANCE]  # drop weak matches from the context
+            log_struggle(question, hits)
 
-    # Remember the struggle so the study plan can find patterns later.
+            print("\nMost relevant material:")
+            for dist, meta, _ in hits:
+                print(f"  [{cite(meta)}] {meta.get('title', '')}  (distance {dist:.2f})")
+
+            excerpts = "\n\n".join(f"[{cite(m)}] {doc}" for _, m, doc in hits)
+            prompt = f"Course excerpts:\n{excerpts}\n\nStudent question: {question}"
+            answer = ask_claude(TUTOR_SYSTEM, prompt, history)
+            if answer is None:
+                print("\n(No ANTHROPIC_API_KEY set, so here is the best-matching passage instead.)\n")
+                print(hits[0][2])
+            else:
+                print("\n" + answer)
+                history += [{"role": "user", "content": prompt},
+                            {"role": "assistant", "content": answer}]
+
+        question = input("\nFollow-up question (or type 'exit' for the menu): ").strip()
+        if not question or question.lower() in ("exit", "quit", "q"):
+            return
+
+
+def log_struggle(question, hits):
+    """Remember what the user asked so the study plan can find patterns later."""
     lectures = [m["lecture"] for _, m, _ in hits if m["source"] == "lecture"]
     get_struggles().add(
         ids=[str(uuid.uuid4())],
@@ -83,18 +114,6 @@ def ask():
         metadatas=[{"asked": datetime.now().isoformat(timespec="seconds"),
                     "lecture": lectures[0] if lectures else "my-notes"}],
     )
-
-    print("\nMost relevant material:")
-    for dist, meta, _ in hits:
-        print(f"  [{cite(meta)}] {meta.get('title', '')}  (distance {dist:.2f})")
-
-    excerpts = "\n\n".join(f"[{cite(m)}] {doc}" for _, m, doc in hits)
-    answer = ask_claude(TUTOR_SYSTEM, f"Course excerpts:\n{excerpts}\n\nStudent question: {question}")
-    if answer is None:
-        print("\n(No ANTHROPIC_API_KEY set, so here is the best-matching passage instead.)\n")
-        print(hits[0][2])
-    else:
-        print("\n" + answer)
 
 
 def add_note():
@@ -173,8 +192,9 @@ def main():
             break
         if choice in actions:
             actions[choice]()
-            # Keep the result on screen until the user is done reading it.
-            input("\nPress Enter to return to the menu...")
+            if choice != "1":  # ask() has its own follow-up loop and exits on 'exit'
+                # Keep the result on screen until the user is done reading it.
+                input("\nPress Enter to return to the menu...")
 
 
 if __name__ == "__main__":
