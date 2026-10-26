@@ -15,6 +15,8 @@ Choose menu option 2 and paste a note to make it searchable right away. Choose o
 ## How I used AI
 I used Claude Code to help find the data source, write and test the code, and choose the retrieval distance cutoff. The app also uses Claude to generate explanations and study plans.
 
+**Sources:** 15-122 lecture notes by the 15-122 course staff, Carnegie Mellon University, https://www.cs.cmu.edu/~15122/ (downloaded at runtime, not redistributed). ChromaDB (https://docs.trychroma.com) with the all-MiniLM-L6-v2 embedding model; Anthropic Claude API. Development assisted by Claude Code; see prompt_log.md.
+
 ---
 
 ## Setup and running (AI-generated documentation)
