@@ -1,0 +1,6 @@
+.venv/
+chroma_store/
+chroma_smoke/
+data/
+.env
+__pycache__/
