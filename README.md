@@ -53,7 +53,8 @@ model, `all-MiniLM-L6-v2` (ONNX). The model (~80 MB) downloads automatically on 
 **Menu**
 1. **Ask:** semantic search over the lecture notes and your notes. Rejects off-topic questions
    (best distance > 1.45, a cutoff picked from observed distances), logs the question, and Claude
-   explains it from the retrieved excerpts with `[lecture pN]` citations.
+   explains it from the retrieved excerpts with `[lecture pN]` citations. You can keep asking
+   follow-ups on the same topic (Claude remembers the conversation) until you type `exit`.
 2. **Add a note:** stored immediately and searchable on the next question. Warns if it's a
    near-duplicate of a note you already have.
 3. **What should I study?:** groups your logged questions by lecture, shows a count per lecture,
