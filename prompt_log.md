@@ -75,4 +75,19 @@ I gave Claude Code my API key, and it went into `.env` (git-ignored). The first 
 
 The second bug: answers were cut off mid-sentence because the thinking counts toward `max_tokens=1024`. I raised it to 4096. After that, the tutor answer for the growable-list query explained the gold/blue token argument with `[11-uba p10]` citations. The study plan noticed I'd asked about UBA and hashing repeatedly and connected them, since hash table resizing uses the same amortized argument.
 
+### 11. Publishing
+> fix everytghing then commit and push instruct me where to open and record
+
+Claude cleared the test data and committed. Its attempt to create a public GitHub repo was blocked by its permission settings, so I ran `gh repo create 122-study-buddy --public --source=. --push` myself.
+
+### 12. Testing it myself: the answer scrolled away
+> walk me through this, ── it hsoeede relevant tools then 5 seconds later pasted the rest and went away why?
+
+When I tried the app, the search results showed up instantly. Claude's answer came about 5 seconds later, and then the menu reprinted right away and pushed the answer off screen. The fix was an "Asking Claude..." status line and a "Press Enter to return to the menu" pause.
+
+### 13. Follow-up questions
+> it should alllowe me to keep asking questions for the same topic, or type exit maybe?
+
+Option 1 became a conversation loop. Claude gets the earlier messages as history, so it builds on what it already explained. Each follow-up searches on *original topic + follow-up*, so vague follow-ups still pull the right lecture. Tested: "can you show me a tiny example of what happens when two names land in the same spot" (no "hash" in it) still found 12-hashing at distance 1.18, and Claude answered with a collision/chaining diagram. Typing `exit` returns to the menu.
+
 <!-- Keep adding prompts below as you continue (API key setup, video, README edits). -->
